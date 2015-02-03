@@ -2,40 +2,33 @@ package com.example.ypc.simpleweather.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Created by ypc on 2015/1/31.
  */
 public class SimpleWeatherOpenHelper extends SQLiteOpenHelper {
 
-    public static final String CREATE_PROVINCE = "create table Province (" +
-            "    id integer primary key autoincrement ," +
-            "    province_name text," +
-            "    province_code text)";
+    private static String DB_PATH = "/data/data/com.example.ypc.simpleweather/databases/";
+    private static String DB_NAME = "simpleWeather";
+    private final Context myContext;
 
-    public static final String CREATE_CITY = "create table City (" +
-            "    id integer primary key autoincrement," +
-            "    city_name text," +
-            "    city_code text," +
-            "    province_id integer)";
-
-    public static final String CREATE_COUNTY = "create table County (" +
-            "    id integer primary key autoincrement," +
-            "    county_name text," +
-            "    county_code text," +
-            "    city_id integer)";
 
 
     public SimpleWeatherOpenHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
         super(context, name, factory, version);
+        myContext = context;
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL(CREATE_PROVINCE);
-        db.execSQL(CREATE_CITY);
-        db.execSQL(CREATE_COUNTY);
+
 
     }
 
@@ -43,4 +36,7 @@ public class SimpleWeatherOpenHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
     }
+
+
+
 }

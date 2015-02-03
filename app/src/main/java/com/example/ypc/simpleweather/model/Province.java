@@ -10,7 +10,6 @@ package com.example.ypc.simpleweather.model;
 public class Province {
     private int id;
     private String provinceName;
-    private String provinceCode;
 
     public int getId() {
         return id;
@@ -28,11 +27,4 @@ public class Province {
         this.provinceName = provinceName;
     }
 
-    public String getProvinceCode() {
-        return provinceCode;
-    }
-
-    public void setProvinceCode(String provinceCode) {
-        this.provinceCode = provinceCode;
-    }
 }

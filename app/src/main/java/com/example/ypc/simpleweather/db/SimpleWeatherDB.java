@@ -4,15 +4,18 @@ package com.example.ypc.simpleweather.db;
  * Created by ypc on 2015/1/31.
  */
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 
 import com.example.ypc.simpleweather.model.City;
-import com.example.ypc.simpleweather.model.County;
 import com.example.ypc.simpleweather.model.Province;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,10 +24,10 @@ import java.util.List;
  */
 public class SimpleWeatherDB {
 
-    /**
-     * 数据库名称
-     */
-    public static final String DB_NAME = "simple_weather";
+
+    private static String DB_PATH = "/data/data/com.example.ypc.simpleweather/databases/";
+    private static String DB_NAME = "simpleWeather";
+    private Context myContext;
 
     /**
      * 数据库版本号
@@ -37,8 +40,21 @@ public class SimpleWeatherDB {
 
     private SimpleWeatherDB() {}
 
+
     private SimpleWeatherDB(Context context) {
+        myContext = context;
         SimpleWeatherOpenHelper openHelper = new SimpleWeatherOpenHelper(context, DB_NAME, null, DB_VERSION);
+        boolean dbExist = checkDataBase();
+        if (dbExist) {
+            //do nothing - database already exist
+        } else {
+            openHelper.getReadableDatabase();
+            try {
+                copyDataBase();
+            } catch (IOException e) {
+                throw new Error("Error copying database");
+            }
+        }
         db = openHelper.getWritableDatabase();
     }
 
@@ -54,46 +70,6 @@ public class SimpleWeatherDB {
         return instance;
     }
 
-    /**
-     * 保存一个新的省
-     * @param province
-     */
-    public void saveProvince(Province province) {
-        if (province != null) {
-            ContentValues values = new ContentValues();
-            values.put("province_name", province.getProvinceName());
-            values.put("province_code", province.getProvinceCode());
-            db.insert("Province", null, values);
-        }
-    }
-
-    /**
-     * 添加一个新的市
-     * @param city
-     */
-    public void saveCity(City city) {
-        if (city != null) {
-            ContentValues values = new ContentValues();
-            values.put("city_name", city.getCityName());
-            values.put("city_code", city.getCityCode());
-            values.put("province_id", city.getProvinceId());
-            db.insert("City", null, values);
-        }
-    }
-
-    /**
-     * 添加一个新的县
-     * @param county
-     */
-    public void saveCounty(County county) {
-        if (county != null) {
-            ContentValues values = new ContentValues();
-            values.put("county_name", county.getCountyName());
-            values.put("county_code", county.getCountyCode());
-            values.put("city_id", county.getCityId());
-            db.insert("County", null, values);
-        }
-    }
 
     /**
      * 加载全国所有的省
@@ -101,13 +77,12 @@ public class SimpleWeatherDB {
      */
     public List<Province> loadProvinces() {
         List<Province> provinces = new ArrayList<Province>();
-        Cursor cursor = db.query("Province", null ,null, null, null, null, null);
+        Cursor cursor = db.query("province", null ,null, null, null, null, null);
         if (cursor.moveToFirst()) {
             do {
                 Province province = new Province();
-                province.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                province.setId(cursor.getInt(cursor.getColumnIndex("ID")));
                 province.setProvinceName(cursor.getString(cursor.getColumnIndex("province_name")));
-                province.setProvinceCode(cursor.getString(cursor.getColumnIndex("province_code")));
                 provinces.add(province);
             } while (cursor.moveToNext());
         }
@@ -121,14 +96,13 @@ public class SimpleWeatherDB {
      */
     public List<City> loadCitys(int provinceId) {
         List<City> citys = new ArrayList<City>();
-        Cursor cursor = db.query("City", null, "province_id = ?", new String[] { String.valueOf(provinceId)},
+        Cursor cursor = db.query("city", null, "province_id = ?", new String[] { String.valueOf(provinceId)},
                 null, null, null);
         if (cursor.moveToFirst()) {
             do {
                 City city = new City();
-                city.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                city.setId(cursor.getInt(cursor.getColumnIndex("ID")));
                 city.setCityName(cursor.getString(cursor.getColumnIndex("city_name")));
-                city.setCityCode(cursor.getString(cursor.getColumnIndex("city_code")));
                 city.setProvinceId(provinceId);
                 citys.add(city);
             } while (cursor.moveToNext());
@@ -136,26 +110,41 @@ public class SimpleWeatherDB {
         return citys;
     }
 
-    /**
-     * 加载一个市下的所有县
-     * @param cityId
-     * @return
-     */
-    public List<County> loadCounty(int cityId) {
-        List<County> counties = new ArrayList<County>();
-        Cursor cursor = db.query("County", null, "city_id = ?", new String[] {String.valueOf(cityId)},
-                null, null, null);
-        if (cursor.moveToFirst()) {
-            do {
-                County county = new County();
-                county.setId(cursor.getInt(cursor.getColumnIndex("id")));
-                county.setCountyName(cursor.getString(cursor.getColumnIndex("county_name")));
-                county.setCountyCode(cursor.getString(cursor.getColumnIndex("county_code")));
-                county.setCityId(cityId);
-                counties.add(county);
-            } while (cursor.moveToNext());
+
+    private boolean checkDataBase() {
+        SQLiteDatabase checkDB = null;
+        try {
+            String myPath = DB_PATH + DB_NAME;
+            checkDB = SQLiteDatabase.openDatabase(myPath, null, SQLiteDatabase.OPEN_READONLY);
+        } catch (SQLiteException e) {
+            //database does't exist yet.
         }
-        return counties;
+
+        if (checkDB != null) {
+            checkDB.close();
+        }
+        return checkDB != null ? true : false;
+    }
+
+
+    private void copyDataBase()throws IOException {
+        //Open your local db as the input stream
+        InputStream myInput = myContext.getAssets().open(DB_NAME);
+        // Path to the just created empty db
+        String outFileName = DB_PATH + DB_NAME;
+        //Open the empty db as the output stream
+        OutputStream myOutput = new FileOutputStream(outFileName);
+        //transfer bytes from the inputfile to the outputfile
+        byte[]buffer = new byte[1024];
+        int length;
+        while ((length = myInput.read(buffer)) > 0) {
+            myOutput.write(buffer, 0, length);
+        }
+
+        //Close the streams
+        myOutput.flush();
+        myOutput.close();
+        myInput.close();
     }
 
 
