@@ -2,7 +2,6 @@ package com.example.ypc.simpleweather.activity;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -45,7 +44,8 @@ public class ChooseAreaActivity extends Activity {
         setContentView(R.layout.choose_area);
         listView = (ListView) findViewById(R.id.list_view);
         titleText = (TextView) findViewById(R.id.title_text);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, dataList);
+
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, dataList);
         listView.setAdapter(adapter);
         simpleWeatherDB = SimpleWeatherDB.getInstance(this);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -75,17 +75,6 @@ public class ChooseAreaActivity extends Activity {
             listView.setSelection(0);
             titleText.setText("中国");
             currentLevel = LEVEL_PROVINCE;
-        } else {
-
-        }
-    }
-
-    private void queryFromServer(String code, String type) {
-        String address;
-        if (!TextUtils.isEmpty(code)) {
-            address = "http://www.weather.com.cn/data/list3/city" + code + ".xml";
-        } else {
-            address = "http://www.weather.com.cn/data/list3/city.xml";
         }
     }
 }
