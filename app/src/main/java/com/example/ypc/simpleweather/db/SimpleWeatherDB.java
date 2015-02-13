@@ -179,7 +179,7 @@ public class SimpleWeatherDB {
             if (!TextUtils.isEmpty(insertStmt)) {
                 db.execSQL(insertStmt);
                 result++;
-                Log.d(TAG, "execute:" + insertStmt);
+//                Log.d(TAG, "execute:" + insertStmt);
             }
         }
         insertReader.close();
